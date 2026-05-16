@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -6,20 +7,42 @@ export async function POST(req: NextRequest) {
     const { name, email, country, currency, monthlyAmount, isHalal, interestedIn } = body;
 
     if (!name || !email || !country) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: "Name, email and country are required" }, { status: 400 });
     }
 
-    // TODO: Persist to Supabase when connected
-    // const supabase = await createClient();
-    // await supabase.from("waitlist_entries").insert({
-    //   name, email, country, currency, monthly_amount: monthlyAmount,
-    //   is_halal: isHalal, interested_in: interestedIn,
-    // });
+    const supabase = await createClient();
 
-    console.log("[Waitlist]", { name, email, country, currency, monthlyAmount, isHalal, interestedIn });
+    // Upsert — prevent duplicate emails from causing 500s
+    const { error: dbError } = await supabase
+      .from("waitlist_entries")
+      .upsert(
+        {
+          name,
+          email,
+          country,
+          currency: currency || null,
+          monthly_amount: monthlyAmount || null,
+          is_halal: isHalal ?? false,
+          interested_in: interestedIn ?? [],
+          source: "website",
+        },
+        { onConflict: "email", ignoreDuplicates: false }
+      );
 
-    // TODO: Send welcome email via Resend
-    // await resend.emails.send({ to: email, subject: "Welcome to Waffert", ... });
+    if (dbError) {
+      console.error("[Waitlist] Supabase error:", dbError);
+      return NextResponse.json({ error: "Failed to register" }, { status: 500 });
+    }
+
+    // Log compliance consent
+    await supabase.from("compliance_consents").insert({
+      email,
+      consent_type: "waitlist_marketing",
+      user_agent: req.headers.get("user-agent") || "",
+      consented: true,
+    });
+
+    // TODO Sprint 2: send welcome email via Resend
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

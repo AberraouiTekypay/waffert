@@ -1,60 +1,42 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users, TrendingUp, Globe, BarChart2, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Users, TrendingUp, Globe, BarChart2, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BASKETS } from "@/lib/baskets";
 
-// Mock data — replace with Supabase queries
-const MOCK_STATS = {
-  totalVisitors: 1247,
-  quizStarts: 489,
-  quizCompletions: 312,
-  waitlistSignups: 187,
-  consultationRequests: 34,
-  completionRate: 63.8,
-};
+interface StatsData {
+  waitlistTotal: number;
+  quizTotal: number;
+  consultationTotal: number;
+  halalPct: number;
+  topCountries: { country: string; count: number }[];
+  topBaskets: { slug: string; count: number }[];
+  monthlyDistribution: { range: string; count: number }[];
+  recentLeads: {
+    name: string;
+    email: string;
+    country: string;
+    currency: string;
+    monthly_amount: string;
+    is_halal: boolean;
+    created_at: string;
+  }[];
+}
 
-const MOCK_COUNTRIES = [
-  { country: "France", count: 89 },
-  { country: "Morocco", count: 67 },
-  { country: "UAE", count: 45 },
-  { country: "United Kingdom", count: 38 },
-  { country: "Germany", count: 29 },
-  { country: "Algeria", count: 22 },
-  { country: "Spain", count: 18 },
-  { country: "Netherlands", count: 14 },
-];
-
-const MOCK_BASKETS = [
-  { slug: "halal-global", count: 87 },
-  { slug: "global-growth", count: 72 },
-  { slug: "emerging-market-diaspora", count: 58 },
-  { slug: "retirement-builder", count: 41 },
-  { slug: "conservative-eur", count: 28 },
-  { slug: "child-education", count: 19 },
-];
-
-const MOCK_MONTHLY = [
-  { range: "< €100", count: 22 },
-  { range: "€100–250", count: 67 },
-  { range: "€250–500", count: 89 },
-  { range: "€500–1,000", count: 73 },
-  { range: "€1,000–2,000", count: 41 },
-  { range: "€2,000+", count: 20 },
-];
-
-const MOCK_LEADS = [
-  { name: "Amina Touré", email: "a.toure@email.com", country: "France", currency: "EUR", monthly: "€250–500", basket: "Halal Global", isHalal: true, date: "2026-05-15" },
-  { name: "Ibrahim Khalil", email: "i.khalil@email.com", country: "UAE", currency: "AED", monthly: "€1,000–2,000", basket: "Global Growth", isHalal: true, date: "2026-05-15" },
-  { name: "Sofia Martins", email: "s.martins@email.com", country: "Spain", currency: "EUR", monthly: "€500–1,000", basket: "Conservative EUR", isHalal: false, date: "2026-05-14" },
-  { name: "Omar Benali", email: "o.benali@email.com", country: "Morocco", currency: "MAD", monthly: "€250–500", basket: "Emerging Market Diaspora", isHalal: true, date: "2026-05-14" },
-  { name: "Marie Dubois", email: "m.dubois@email.com", country: "France", currency: "EUR", monthly: "€100–250", basket: "Retirement Builder", isHalal: false, date: "2026-05-13" },
-];
-
-function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; label: string; value: string | number; sub?: string }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  sub?: string;
+}) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm text-gray-500">{label}</div>
         <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
@@ -67,12 +49,79 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; 
   );
 }
 
+function BarRow({ label, count, max, color }: { label: string; count: number; max: number; color: string }) {
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-gray-700 truncate mr-2">{label}</span>
+        <span className="text-gray-500 font-medium shrink-0">{count}</span>
+      </div>
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full`} style={{ width: `${(count / max) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "leads">("overview");
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "waffert2026";
 
-  // Simple password gate — replace with proper auth
+  const fetchStats = useCallback(async (pwd: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/stats", {
+        headers: { Authorization: `Bearer ${pwd}` },
+      });
+      if (!res.ok) throw new Error("Unauthorized or fetch failed");
+      const data = await res.json();
+      setStats(data);
+    } catch (e) {
+      setError("Failed to load data. Check your password or Supabase connection.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  function handleLogin() {
+    if (password === adminPassword) {
+      setAuthed(true);
+      fetchStats(password);
+    } else {
+      setError("Wrong password");
+    }
+  }
+
+  function exportCSV() {
+    if (!stats?.recentLeads) return;
+    const rows = [
+      ["Name", "Email", "Country", "Currency", "Monthly", "Halal", "Date"],
+      ...stats.recentLeads.map((l) => [
+        l.name,
+        l.email,
+        l.country,
+        l.currency || "",
+        l.monthly_amount || "",
+        l.is_halal ? "Yes" : "No",
+        l.created_at?.split("T")[0] || "",
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `waffert-leads-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -88,17 +137,15 @@ export default function AdminPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && password === (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "waffert2026") && setAuthed(true)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 placeholder="Enter admin password"
               />
             </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
             <Button
               className="w-full bg-[#0f2744] hover:bg-[#1a3a5c] text-white rounded-xl"
-              onClick={() => {
-                if (password === (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "waffert2026")) setAuthed(true);
-                else alert("Wrong password");
-              }}
+              onClick={handleLogin}
             >
               Access Dashboard
             </Button>
@@ -110,26 +157,23 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Admin header */}
-      <div className="bg-[#0f2744] text-white px-6 py-4">
+      {/* Header */}
+      <div className="bg-[#0f2744] text-white px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#0f2744] text-sm font-black">W</span>
-            <span className="font-semibold">Waffert Admin</span>
+            <span className="font-semibold text-sm sm:text-base">Waffert Admin</span>
           </div>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`text-sm font-medium transition-colors ${activeTab === "overview" ? "text-white" : "text-gray-400 hover:text-white"}`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab("leads")}
-              className={`text-sm font-medium transition-colors ${activeTab === "leads" ? "text-white" : "text-gray-400 hover:text-white"}`}
-            >
-              Leads
-            </button>
+          <div className="flex gap-2 sm:gap-4">
+            {(["overview", "leads"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`text-sm font-medium capitalize transition-colors ${activeTab === tab ? "text-white" : "text-gray-400 hover:text-white"}`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
           <Button
             size="sm"
@@ -142,108 +186,114 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-[#0f2744]">
-              {activeTab === "overview" ? "Dashboard Overview" : "Lead Management"}
+            <h1 className="text-xl sm:text-2xl font-bold text-[#0f2744]">
+              {activeTab === "overview" ? "Dashboard" : "Leads"}
             </h1>
-            <p className="text-gray-500 text-sm mt-1">Data shown is illustrative — connect Supabase to see real data</p>
+            <p className="text-gray-500 text-xs mt-0.5">Live data from Supabase</p>
           </div>
-          <Button size="sm" variant="outline" className="flex items-center gap-2">
-            <RefreshCw size={14} /> Refresh
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-2 text-xs"
+            onClick={() => fetchStats(password)}
+            disabled={loading}
+          >
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
           </Button>
         </div>
 
-        {activeTab === "overview" && (
-          <div className="space-y-8">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loading && !stats && (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin w-8 h-8 border-2 border-[#0f2744] border-t-transparent rounded-full" />
+          </div>
+        )}
+
+        {stats && activeTab === "overview" && (
+          <div className="space-y-6">
             {/* KPI cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={Users} label="Waitlist signups" value={MOCK_STATS.waitlistSignups} sub="All time" />
-              <StatCard icon={BarChart2} label="Quiz completions" value={MOCK_STATS.quizCompletions} sub={`${MOCK_STATS.completionRate}% completion rate`} />
-              <StatCard icon={TrendingUp} label="Quiz starts" value={MOCK_STATS.quizStarts} />
-              <StatCard icon={Globe} label="Consultation requests" value={MOCK_STATS.consultationRequests} />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatCard icon={Users} label="Early access" value={stats.waitlistTotal} sub="Registrations" />
+              <StatCard icon={BarChart2} label="Quiz completions" value={stats.quizTotal} />
+              <StatCard icon={TrendingUp} label="Consultations" value={stats.consultationTotal} />
+              <StatCard icon={Globe} label="Halal interest" value={`${stats.halalPct}%`} sub="of registrations" />
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Top countries */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                <h2 className="font-semibold text-[#0f2744] mb-4">Demand by country</h2>
-                <div className="space-y-3">
-                  {MOCK_COUNTRIES.map((c) => {
-                    const max = MOCK_COUNTRIES[0].count;
-                    return (
-                      <div key={c.country}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-700">{c.country}</span>
-                          <span className="text-gray-500 font-medium">{c.count}</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(c.count / max) * 100}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* Charts */}
+            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+              {/* Countries */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <h2 className="font-semibold text-[#0f2744] mb-4 text-sm">Demand by country</h2>
+                {stats.topCountries.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No data yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.topCountries.map((c) => (
+                      <BarRow key={c.country} label={c.country} count={c.count} max={stats.topCountries[0].count} color="bg-emerald-500" />
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Top baskets */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                <h2 className="font-semibold text-[#0f2744] mb-4">Basket recommendations</h2>
-                <div className="space-y-3">
-                  {MOCK_BASKETS.map((b) => {
-                    const basket = BASKETS.find((basket) => basket.slug === b.slug);
-                    const max = MOCK_BASKETS[0].count;
-                    return (
-                      <div key={b.slug}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-700">{basket?.icon} {basket?.name.replace(" Basket", "")}</span>
-                          <span className="text-gray-500 font-medium">{b.count}</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(b.count / max) * 100}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* Baskets */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <h2 className="font-semibold text-[#0f2744] mb-4 text-sm">Basket recommendations</h2>
+                {stats.topBaskets.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No quiz data yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.topBaskets.map((b) => {
+                      const basket = BASKETS.find((bk) => bk.slug === b.slug);
+                      return (
+                        <BarRow
+                          key={b.slug}
+                          label={`${basket?.icon || ""} ${basket?.name.replace(" Basket", "") || b.slug}`}
+                          count={b.count}
+                          max={stats.topBaskets[0].count}
+                          color="bg-blue-500"
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Monthly investment ranges */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                <h2 className="font-semibold text-[#0f2744] mb-4">Monthly investment ranges</h2>
-                <div className="space-y-3">
-                  {MOCK_MONTHLY.map((m) => {
-                    const max = Math.max(...MOCK_MONTHLY.map((x) => x.count));
-                    return (
-                      <div key={m.range}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-700">{m.range}</span>
-                          <span className="text-gray-500 font-medium">{m.count}</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-purple-500 rounded-full" style={{ width: `${(m.count / max) * 100}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* Monthly ranges */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <h2 className="font-semibold text-[#0f2744] mb-4 text-sm">Monthly investment ranges</h2>
+                {stats.monthlyDistribution.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No data yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.monthlyDistribution.map((m) => (
+                      <BarRow key={m.range} label={m.range} count={m.count} max={stats.monthlyDistribution[0].count} color="bg-purple-500" />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Kill/continue thresholds */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-              <h2 className="font-semibold text-[#0f2744] mb-4">Validation thresholds</h2>
-              <div className="grid sm:grid-cols-3 gap-4">
+            {/* Thresholds */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+              <h2 className="font-semibold text-[#0f2744] mb-4 text-sm">Validation thresholds</h2>
+              <div className="grid sm:grid-cols-3 gap-3">
                 {[
-                  { label: "Kill", desc: "< 100 waitlist in 60 days", condition: MOCK_STATS.waitlistSignups < 100, color: "bg-red-50 border-red-200 text-red-700" },
-                  { label: "Continue + pivot", desc: "100–500 waitlist, adjust messaging", condition: MOCK_STATS.waitlistSignups >= 100 && MOCK_STATS.waitlistSignups < 500, color: "bg-amber-50 border-amber-200 text-amber-700" },
-                  { label: "Scale", desc: "500+ waitlist, strong country clustering", condition: MOCK_STATS.waitlistSignups >= 500, color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+                  { label: "Kill", desc: "< 100 signups in 60 days", active: stats.waitlistTotal < 100, color: "bg-red-50 border-red-200 text-red-700" },
+                  { label: "Continue", desc: "100–500 signups, refine messaging", active: stats.waitlistTotal >= 100 && stats.waitlistTotal < 500, color: "bg-amber-50 border-amber-200 text-amber-700" },
+                  { label: "Scale", desc: "500+ signups, activate provider", active: stats.waitlistTotal >= 500, color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
                 ].map((t) => (
                   <div key={t.label} className={`rounded-xl border p-4 ${t.color}`}>
                     <div className="font-semibold text-lg mb-1">{t.label}</div>
                     <div className="text-sm">{t.desc}</div>
-                    {t.condition && <div className="text-xs font-bold mt-2 uppercase">→ Current status</div>}
+                    {t.active && <div className="text-xs font-bold mt-2 uppercase">→ Current</div>}
                   </div>
                 ))}
               </div>
@@ -251,50 +301,54 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab === "leads" && (
-          <div className="space-y-6">
-            {/* Export button placeholder */}
+        {stats && activeTab === "leads" && (
+          <div className="space-y-4">
             <div className="flex justify-end">
-              <Button size="sm" variant="outline" className="text-xs">
-                Export CSV (TODO: connect Supabase)
+              <Button size="sm" variant="outline" onClick={exportCSV} className="flex items-center gap-2 text-xs">
+                <Download size={12} /> Export CSV
               </Button>
             </div>
 
-            {/* Leads table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm min-w-[640px]">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      {["Name", "Email", "Country", "Currency", "Monthly", "Basket", "Halal", "Date"].map((h) => (
-                        <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      {["Name", "Email", "Country", "Currency", "Monthly", "Halal", "Date"].map((h) => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {MOCK_LEADS.map((lead, i) => (
-                      <tr key={lead.email} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="px-5 py-3 font-medium text-[#0f2744]">{lead.name}</td>
-                        <td className="px-5 py-3 text-gray-600">{lead.email}</td>
-                        <td className="px-5 py-3 text-gray-600">{lead.country}</td>
-                        <td className="px-5 py-3 text-gray-600">{lead.currency}</td>
-                        <td className="px-5 py-3 text-gray-600">{lead.monthly}</td>
-                        <td className="px-5 py-3 text-gray-600 text-xs">{lead.basket}</td>
-                        <td className="px-5 py-3">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${lead.isHalal ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
-                            {lead.isHalal ? "Yes" : "No"}
-                          </span>
+                    {stats.recentLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">
+                          No registrations yet. Share the link!
                         </td>
-                        <td className="px-5 py-3 text-gray-500 text-xs">{lead.date}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      stats.recentLeads.map((lead, i) => (
+                        <tr key={lead.email} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="px-4 py-3 font-medium text-[#0f2744] whitespace-nowrap">{lead.name}</td>
+                          <td className="px-4 py-3 text-gray-600 text-xs">{lead.email}</td>
+                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{lead.country}</td>
+                          <td className="px-4 py-3 text-gray-600">{lead.currency || "—"}</td>
+                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-xs">{lead.monthly_amount || "—"}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${lead.is_halal ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                              {lead.is_halal ? "Yes" : "No"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                            {lead.created_at?.split("T")[0] || "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
-              </div>
-              <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
-                Showing mock data — connect Supabase to see real leads
               </div>
             </div>
           </div>

@@ -10,7 +10,16 @@
       "Bash(npx shadcn@latest add button card input label select textarea badge progress dialog sheet separator tabs accordion --yes)",
       "Bash(gh auth:*)",
       "Bash(gh --version)",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "mcp__plugin_vercel_vercel__deploy_to_vercel",
+      "Bash(vercel:*)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__get_cost",
+      "mcp__claude_ai_Supabase__confirm_cost",
+      "mcp__claude_ai_Supabase__create_project",
+      "mcp__claude_ai_Supabase__get_project_url",
+      "mcp__claude_ai_Supabase__get_publishable_keys",
+      "mcp__claude_ai_Supabase__apply_migration"
     ]
   }
 }
