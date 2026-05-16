@@ -5,8 +5,18 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle } from "lucide-react";
 
 export const metadata = {
-  title: "How Waffert Works — Build Global Wealth Every Month",
-  description: "Learn how Waffert helps international investors build global wealth through simple monthly investment plans.",
+  title: "How It Works",
+  description: "Learn how Waffert helps international investors build global wealth through simple monthly investment plans. Take the quiz, get a plan, start building.",
+  openGraph: {
+    title: "How Waffert Works — Build Global Wealth Every Month",
+    description: "Learn how Waffert helps international investors build global wealth through simple monthly plans.",
+    url: "https://waffert.com/how-it-works",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "How Waffert Works",
+    description: "Learn how Waffert helps international investors build global wealth.",
+  },
 };
 
 const STEPS = [

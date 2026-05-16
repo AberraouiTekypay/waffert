@@ -5,8 +5,18 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen } from "lucide-react";
 
 export const metadata = {
-  title: "Education Library — Waffert",
-  description: "Learn about investing, wealth building, ETFs, halal investing, and more with Waffert's education library.",
+  title: "Education Library",
+  description: "Learn about investing, wealth building, ETFs, halal investing, and more. Free educational content for international investors.",
+  openGraph: {
+    title: "Education Library — Waffert",
+    description: "Free educational content: ETFs, halal investing, compound interest, diaspora wealth building.",
+    url: "https://waffert.com/education",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "Education Library — Waffert",
+    description: "Free educational content for international investors.",
+  },
 };
 
 const ARTICLES = [

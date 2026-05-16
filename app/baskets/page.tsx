@@ -7,8 +7,18 @@ import { LAUNCH_BASKETS, getRiskLevelLabel } from "@/lib/baskets";
 import { ArrowRight } from "lucide-react";
 
 export const metadata = {
-  title: "Wealth Baskets — Waffert",
+  title: "Wealth Baskets",
   description: "Explore 5 educational wealth basket concepts for international savers. Find the right approach for your goals, currency, and risk profile.",
+  openGraph: {
+    title: "Wealth Baskets — Waffert",
+    description: "Explore 5 educational wealth basket concepts for international savers.",
+    url: "https://waffert.com/baskets",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "Wealth Baskets — Waffert",
+    description: "Explore 5 educational wealth basket concepts for international savers.",
+  },
 };
 
 const RISK_COLORS: Record<string, string> = {

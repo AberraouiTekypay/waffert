@@ -16,8 +16,18 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   const basket = getBasketBySlug(params.slug);
   if (!basket) return { title: "Basket not found" };
   return {
-    title: `${basket.name} — Waffert`,
+    title: basket.name,
     description: basket.description,
+    openGraph: {
+      title: `${basket.name} — Waffert`,
+      description: basket.description,
+      url: `https://waffert.com/baskets/${basket.slug}`,
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title: `${basket.name} — Waffert`,
+      description: basket.description,
+    },
   };
 }
 
