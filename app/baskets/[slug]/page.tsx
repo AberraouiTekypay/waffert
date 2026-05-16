@@ -141,7 +141,7 @@ export default function BasketDetailPage({ params }: { params: { slug: string } 
             <p className="text-sm text-gray-500 mb-6">
               These figures are hypothetical and for educational purposes only. They are not forecasts or guarantees.
             </p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { label: "Conservative", sub: "Lower-end scenario", value: basket.returnScenario.conservative, color: "text-blue-600", bg: "bg-blue-50" },
                 { label: "Base Case", sub: "Expected scenario", value: basket.returnScenario.base, color: "text-emerald-600", bg: "bg-emerald-50" },

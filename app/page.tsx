@@ -57,7 +57,7 @@ export default function HomePage() {
   const highlightedBaskets = LAUNCH_BASKETS.slice(0, 3);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen pb-[72px] sm:pb-0">
       <Navbar />
 
       {/* Hero */}
@@ -197,7 +197,7 @@ export default function HomePage() {
               <p className="text-gray-600">Illustrative portfolio concepts for every investor profile</p>
             </div>
             <Link href="/baskets" className="text-sm text-emerald-600 font-semibold hover:underline flex items-center gap-1">
-              View all 9 baskets <ArrowRight size={14} />
+              View all 5 baskets <ArrowRight size={14} />
             </Link>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -289,6 +289,20 @@ export default function HomePage() {
       </section>
 
       <Footer />
+
+      {/* Mobile sticky CTA */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex gap-3 shadow-lg">
+        <Link href="/waitlist" className="flex-1">
+          <Button variant="outline" className="w-full rounded-full border-gray-200 text-[#0f2744] font-semibold text-sm h-11">
+            Early access
+          </Button>
+        </Link>
+        <Link href="/quiz" className="flex-1">
+          <Button className="w-full bg-[#0f2744] hover:bg-[#1a3a5c] text-white rounded-full font-semibold text-sm h-11">
+            Find my plan
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

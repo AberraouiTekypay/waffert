@@ -85,14 +85,40 @@ function QuizResultContent() {
     }
   }, [params]);
 
-  if (!result || !primaryBasket) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setLoaded(true);
+  }, []);
+
+  if (!loaded) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin w-8 h-8 border-2 border-[#0f2744] border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-gray-500">Loading your wealth plan...</p>
+          <div className="animate-spin w-8 h-8 border-2 border-[#0f2744] border-t-transparent rounded-full" />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!result || !primaryBasket) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center px-4 py-20">
+          <div className="text-center max-w-sm">
+            <div className="text-5xl mb-4">🔍</div>
+            <h1 className="text-2xl font-bold text-[#0f2744] mb-3">No results found</h1>
+            <p className="text-gray-500 mb-6 leading-relaxed">
+              We couldn't find your quiz results. This can happen if you cleared your browser data or opened the link on a different device.
+            </p>
+            <Link href="/quiz">
+              <Button className="bg-[#0f2744] hover:bg-[#1a3a5c] text-white rounded-full px-8 font-semibold">
+                Retake the quiz
+              </Button>
+            </Link>
           </div>
         </div>
         <Footer />
@@ -139,7 +165,7 @@ function QuizResultContent() {
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
               <div className="bg-gray-50 rounded-xl p-4 text-center">
                 <Shield size={18} className="text-[#0f2744] mx-auto mb-1" />
                 <div className="text-xs text-gray-500 mb-0.5">Risk Level</div>
