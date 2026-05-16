@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { computeRiskScore, recommendBaskets } from "@/lib/recommendation-engine";
 import { QuizAnswer } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
+import { resend, FROM_EMAIL, TEAM_EMAIL, isEmailEnabled } from "@/lib/resend";
+import { TeamNotificationEmail } from "@/emails/team-notification";
+import { render } from "@react-email/render";
+import { getBasketBySlug } from "@/lib/baskets";
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,8 +52,33 @@ export async function POST(req: NextRequest) {
         consented: true,
       });
     } catch (dbErr) {
-      // Non-fatal: log and continue — don't block the user flow
       console.error("[Quiz] Supabase insert failed:", dbErr);
+    }
+
+    // Alert team for high-intent leads (wants guidance)
+    if (answers.needsGuidance && isEmailEnabled() && resend) {
+      const basketName = getBasketBySlug(recommendation.primary)?.name;
+      try {
+        await resend.emails.send({
+          from: FROM_EMAIL,
+          to: TEAM_EMAIL,
+          subject: `🔥 High-intent quiz lead wants guidance (${answers.country})`,
+          html: await render(
+            TeamNotificationEmail({
+              type: "quiz",
+              name: "Quiz user",
+              email: "—",
+              country: answers.country,
+              currency: answers.currency,
+              monthlyAmount: String(answers.monthlyAmount),
+              isHalal: answers.isHalal,
+              primaryBasket: basketName,
+            })
+          ),
+        });
+      } catch (emailErr) {
+        console.error("[Quiz] Team alert email failed (non-fatal):", emailErr);
+      }
     }
 
     const response = NextResponse.json(result, { status: 200 });

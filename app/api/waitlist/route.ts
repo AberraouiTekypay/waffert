@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resend, FROM_EMAIL, TEAM_EMAIL, isEmailEnabled } from "@/lib/resend";
+import { WelcomeWaitlistEmail } from "@/emails/welcome-waitlist";
+import { TeamNotificationEmail } from "@/emails/team-notification";
+import { render } from "@react-email/render";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,9 +14,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name, email and country are required" }, { status: 400 });
     }
 
+    // Persist to Supabase
     const supabase = await createClient();
-
-    // Upsert — prevent duplicate emails from causing 500s
     const { error: dbError } = await supabase
       .from("waitlist_entries")
       .upsert(
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to register" }, { status: 500 });
     }
 
-    // Log compliance consent
+    // Log consent
     await supabase.from("compliance_consents").insert({
       email,
       consent_type: "waitlist_marketing",
@@ -42,7 +45,39 @@ export async function POST(req: NextRequest) {
       consented: true,
     });
 
-    // TODO Sprint 2: send welcome email via Resend
+    // Send emails via Resend (non-blocking, best-effort)
+    if (isEmailEnabled() && resend) {
+      try {
+        await Promise.all([
+          // Welcome email to user
+          resend.emails.send({
+            from: FROM_EMAIL,
+            to: email,
+            subject: "You're registered for early access to Waffert 🌍",
+            html: await render(WelcomeWaitlistEmail({ name, country })),
+          }),
+          // Team notification
+          resend.emails.send({
+            from: FROM_EMAIL,
+            to: TEAM_EMAIL,
+            subject: `New early-access signup: ${name} (${country})`,
+            html: await render(
+              TeamNotificationEmail({
+                type: "waitlist",
+                name,
+                email,
+                country,
+                currency,
+                monthlyAmount,
+                isHalal,
+              })
+            ),
+          }),
+        ]);
+      } catch (emailErr) {
+        console.error("[Waitlist] Email send failed (non-fatal):", emailErr);
+      }
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

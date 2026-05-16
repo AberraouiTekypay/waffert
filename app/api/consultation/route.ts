@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resend, FROM_EMAIL, TEAM_EMAIL, isEmailEnabled } from "@/lib/resend";
+import { TeamNotificationEmail } from "@/emails/team-notification";
+import { render } from "@react-email/render";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +14,6 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createClient();
-
     const { error: dbError } = await supabase.from("consultation_requests").insert({
       name,
       email,
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
     }
 
-    // Log compliance consent
+    // Log consent
     await supabase.from("compliance_consents").insert({
       email,
       consent_type: "consultation_disclaimer",
@@ -36,7 +38,29 @@ export async function POST(req: NextRequest) {
       consented: true,
     });
 
-    // TODO Sprint 2: send notification email to team via Resend
+    // Team notification email
+    if (isEmailEnabled() && resend) {
+      try {
+        await resend.emails.send({
+          from: FROM_EMAIL,
+          to: TEAM_EMAIL,
+          subject: `📞 New consultation request: ${name} (${country || "Unknown"})`,
+          html: await render(
+            TeamNotificationEmail({
+              type: "consultation",
+              name,
+              email,
+              country,
+              monthlyAmount,
+              preferredTime,
+              message,
+            })
+          ),
+        });
+      } catch (emailErr) {
+        console.error("[Consultation] Email send failed (non-fatal):", emailErr);
+      }
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
