@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)"
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init --yes --base-color slate)",
+      "Bash(npx shadcn@latest add button card input label select textarea badge progress toast dialog sheet separator tabs accordion --yes)",
+      "Bash(npx shadcn@latest add sonner slider radio-group checkbox switch --yes)",
+      "Bash(npm run:*)",
+      "Bash(npx shadcn@latest add button card input label select textarea badge progress dialog sheet separator tabs accordion --yes)",
+      "Bash(gh auth:*)",
+      "Bash(gh --version)",
+      "Bash(gh repo:*)"
     ]
   }
 }

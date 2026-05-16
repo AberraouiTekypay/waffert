@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Waffert — Build Global Wealth Every Month
+
+> Early-access B2C wealth education platform for international savers, diaspora investors, and halal-conscious investors.
+
+**Status:** Early Access MVP (validation phase) — educational simulations only, no live trading, no custody, no client money.
+
+---
+
+## What is Waffert?
+
+Waffert helps international savers explore simple monthly wealth plans through:
+
+- A **free wealth quiz** that recommends an educational basket
+- **5 illustrative wealth baskets** matched to different goals and risk profiles
+- An **investment simulator** showing how monthly contributions could grow
+- An **early-access registration** for when real investing launches
+- An **education library** covering global investing concepts
+
+Waffert does NOT provide investment advice, execute trades, hold client money, or offer regulated financial services. Future investment functionality will be delivered through appropriately regulated partner providers.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| UI Components | shadcn/ui |
+| Charts | Recharts |
+| Database | Supabase (PostgreSQL) |
+| Email | Resend (TODO: connect) |
+| Analytics | PostHog / Plausible (TODO: connect) |
+| Deployment | Vercel |
+
+---
+
+## Pages
+
+| Route | Status | Description |
+|-------|--------|-------------|
+| `/` | Live | Homepage with hero, how it works, basket previews |
+| `/how-it-works` | Live | Explainer page |
+| `/quiz` | Live | Multi-step wealth quiz |
+| `/quiz/result` | Live | Basket recommendation result |
+| `/baskets` | Live | All 5 launch baskets |
+| `/baskets/[slug]` | Live | Individual basket detail |
+| `/simulator` | Live | Investment simulator |
+| `/waitlist` | Live | Early access registration |
+| `/education` | Live | Education library (content coming) |
+| `/consultation` | Live | Book a consultation |
+| `/admin` | Live | Admin dashboard (password-gated) |
+| `/legal/disclaimer` | Live | Legal disclaimer |
+| `/legal/privacy` | Live | Privacy policy |
+| `/legal/terms` | Live | Terms of use (placeholder) |
+
+---
+
+## Launch Baskets (5 active)
+
+1. **Global Growth Basket** — diversified global equity exposure
+2. **Conservative EUR Basket** — capital preservation in euros
+3. **USD Wealth Protection Basket** — USD-denominated wealth building
+4. **Halal Global Basket** — Shariah-compliant investing concept
+5. **Child Education Basket** — medium-term goal savings
+
+Hidden baskets (in codebase, not public navigation):
+- Retirement Builder Basket
+- Dividend Income Basket
+- Defensive Inflation Protection Basket
+- Emerging Market Diaspora Basket
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.local.example .env.local
+# Fill in Supabase, Resend, etc.
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+See `.env.local.example`. Required for full functionality:
 
-To learn more about Next.js, take a look at the following resources:
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+RESEND_API_KEY=
+NEXT_PUBLIC_ADMIN_PASSWORD=waffert2026
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Supabase Setup
 
-## Deploy on Vercel
+1. Create a new Supabase project at supabase.com
+2. Run `supabase/schema.sql` in the SQL editor
+3. Run `supabase/seed.sql` in the SQL editor
+4. Add your URL and anon key to `.env.local`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment (Vercel)
+
+```bash
+npm i -g vercel
+vercel         # preview
+vercel --prod  # production
+```
+
+Set environment variables in Vercel dashboard.
+
+---
+
+## Provider Abstraction
+
+The platform is provider-agnostic. See `lib/config.ts`:
+
+- `mockInvestmentProvider` — active now (educational mock data)
+- `alpacaPaperProvider` — future placeholder
+- `upvestProvider` — future placeholder (EU regulated)
+- `drivewealthProvider` — future placeholder (US)
+
+---
+
+## Admin Dashboard
+
+Visit `/admin`. Default password: `waffert2026` (set `NEXT_PUBLIC_ADMIN_PASSWORD`).
+Currently shows mock data — connect Supabase to see real leads.
+
+---
+
+## TODOs Before Commercial Launch
+
+- [ ] Connect Supabase for lead persistence
+- [ ] Connect Resend for email notifications  
+- [ ] Replace admin password gate with proper auth
+- [ ] Legal review of all basket descriptions and disclaimers
+- [ ] Shariah scholar review of Halal basket content
+- [ ] Regulated partner agreement (Upvest / WealthKernel / other)
+- [ ] GDPR consent logging to database
+- [ ] Add analytics (PostHog or Plausible)
+- [ ] Write education library articles
+- [ ] Full Terms of Service (replace placeholder)
+- [ ] Cookie consent banner
+- [ ] Configure domain DNS for waffert.com
