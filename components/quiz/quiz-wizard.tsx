@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { QuizAnswer } from "@/lib/types";
+import { track } from "@/lib/analytics";
 
 const COUNTRIES = [
   "France", "Germany", "Spain", "Italy", "Netherlands", "Belgium", "Portugal",
@@ -140,6 +141,11 @@ export default function QuizWizard() {
   const [answers, setAnswers] = useState<QuizAnswer>(DEFAULT_ANSWERS);
   const [submitting, setSubmitting] = useState(false);
 
+  // Track quiz start on first render
+  useEffect(() => {
+    track("quiz_started");
+  }, []);
+
   const totalSteps = STEPS.length;
   const stepId = STEPS[currentStep].id;
   const progress = (currentStep / (totalSteps - 1)) * 100;
@@ -185,8 +191,16 @@ export default function QuizWizard() {
       return;
     }
     if (currentStep < totalSteps - 1) {
+      track("quiz_step_completed", { step: currentStep, step_id: stepId });
       setCurrentStep((s) => s + 1);
     } else {
+      track("quiz_completed", {
+        country: answers.country,
+        goal: answers.goal,
+        is_halal: answers.isHalal,
+        monthly_amount: answers.monthlyAmount,
+        risk_tolerance: answers.riskTolerance,
+      });
       handleSubmit();
     }
   }

@@ -6,6 +6,7 @@ import Footer from "@/components/shared/footer";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Globe, Users, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { track, identifyUser } from "@/lib/analytics";
 
 const COUNTRIES = [
   "France", "Germany", "Spain", "Italy", "Netherlands", "Belgium", "Portugal",
@@ -49,6 +50,13 @@ export default function EarlyAccessPage() {
         body: JSON.stringify(form),
       });
       if (res.ok) {
+        track("waitlist_submitted", {
+          country: form.country,
+          currency: form.currency,
+          monthly_amount: form.monthlyAmount,
+          is_halal: form.isHalal,
+        });
+        identifyUser(form.email, { name: form.name, country: form.country });
         setSubmitted(true);
       } else {
         throw new Error("Failed");
