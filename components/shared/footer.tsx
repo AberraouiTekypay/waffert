@@ -7,10 +7,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="md:col-span-1">
-            <div className="flex items-center gap-2 font-bold text-xl mb-4">
+            <div className="flex items-center gap-2 font-bold text-xl mb-1">
               <span className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#0f2744] text-sm font-black">W</span>
               Waffert
             </div>
+            <p className="text-xs text-gray-500 mb-4">
+              An <a href="https://em300.co" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline underline-offset-4 decoration-gray-700">EM300.co</a> Company
+            </p>
             <p className="text-gray-400 text-sm leading-relaxed">
               Build global wealth every month. Simple investment plans for international savers.
             </p>
